@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nine-state campaign sequence (`INPUT_RECEIVED` → `READY_FOR_RENDER`) with a
   no-skip guarantee, and per-state contracts (Inputs, Outputs, Success/Failure
   Condition, Next/Previous State, Retry Logic).
+- Market Fit Scoring Engine specification (`system/MARKET_FIT_ENGINE.md`): a
+  rule-based go/no-go gate that scores advertising viability across ten 0–100
+  dimensions before any creative is generated, returning a total score, top 3
+  strengths and weaknesses, and an A / B / Reject recommendation.
+- Market Fit return contract as JSON Schema
+  (`data/schemas/market_fit.schema.json`).
 
 ## [v0.1] — Foundation
 

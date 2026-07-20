@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra.dev/schemas/market_fit.schema.json",
+  "title": "Market Fit Result",
+  "description": "Return contract for the HYDRA Market Fit Scoring Engine. Estimates whether a product is worth advertising before any creative is generated. This engine never produces creative.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["total_score", "dimension_scores", "top_strengths", "top_weaknesses", "recommendation"],
+  "$defs": {
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "dimension_name": {
+      "type": "string",
+      "enum": [
+        "Visual Demonstration",
+        "Problem Severity",
+        "Emotional Appeal",
+        "Impulse Purchase Potential",
+        "Price Advantage",
+        "Novelty",
+        "Scroll Stop Potential",
+        "Viral Potential",
+        "Competition Difficulty",
+        "Creative Diversity"
+      ]
+    },
+    "ranked_dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimension", "score"],
+      "properties": {
+        "dimension": { "$ref": "#/$defs/dimension_name" },
+        "score": { "$ref": "#/$defs/score" }
+      }
+    }
+  },
+  "properties": {
+    "total_score": {
+      "$ref": "#/$defs/score",
+      "description": "Overall Market Fit Score, 0-100, weighted aggregate of the ten dimensions."
+    },
+    "dimension_scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Each dimension scored 0-100 (higher = more favorable for advertising). Competition Difficulty is scored inversely: high = low difficulty / easy to compete.",
+      "required": [
+        "visual_demonstration",
+        "problem_severity",
+        "emotional_appeal",
+        "impulse_purchase_potential",
+        "price_advantage",
+        "novelty",
+        "scroll_stop_potential",
+        "viral_potential",
+        "competition_difficulty",
+        "creative_diversity"
+      ],
+      "properties": {
+        "visual_demonstration": { "$ref": "#/$defs/score" },
+        "problem_severity": { "$ref": "#/$defs/score" },
+        "emotional_appeal": { "$ref": "#/$defs/score" },
+        "impulse_purchase_potential": { "$ref": "#/$defs/score" },
+        "price_advantage": { "$ref": "#/$defs/score" },
+        "novelty": { "$ref": "#/$defs/score" },
+        "scroll_stop_potential": { "$ref": "#/$defs/score" },
+        "viral_potential": { "$ref": "#/$defs/score" },
+        "competition_difficulty": { "$ref": "#/$defs/score" },
+        "creative_diversity": { "$ref": "#/$defs/score" }
+      }
+    },
+    "top_strengths": {
+      "type": "array",
+      "description": "The three highest-scoring dimensions.",
+      "items": { "$ref": "#/$defs/ranked_dimension" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "top_weaknesses": {
+      "type": "array",
+      "description": "The three lowest-scoring dimensions.",
+      "items": { "$ref": "#/$defs/ranked_dimension" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["priority", "action", "rationale"],
+      "properties": {
+        "priority": {
+          "type": "string",
+          "enum": ["Priority A", "Priority B", "Reject"]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "Create immediately",
+            "Create if resources allow",
+            "Do not create"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this tier, grounded in the top strengths and weaknesses."
+        }
+      }
+    }
+  }
+}
