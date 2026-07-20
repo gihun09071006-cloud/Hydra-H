@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra.dev/schemas/product_intelligence.schema.json",
+  "title": "Product Intelligence Record",
+  "description": "Output contract for the HYDRA Product Intelligence Engine (PIE). PIE analyzes a product before any creative decision is made; it never generates advertisements or prompts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "product_identity",
+    "functional_analysis",
+    "visual_analysis",
+    "customer_analysis",
+    "pain_analysis",
+    "objection_analysis",
+    "competitive_analysis",
+    "virality_analysis",
+    "platform_recommendation"
+  ],
+  "properties": {
+    "product_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product_name", "brand", "category", "price", "country", "marketplace"],
+      "properties": {
+        "product_name": { "type": "string" },
+        "brand": { "type": "string" },
+        "category": { "type": "string" },
+        "price": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount", "currency"],
+          "properties": {
+            "amount": { "type": "number", "minimum": 0 },
+            "currency": { "type": "string", "description": "ISO 4217 currency code, e.g. USD." }
+          }
+        },
+        "country": { "type": "string", "description": "Target market country." },
+        "marketplace": { "type": "string", "description": "Where the product is sold." }
+      }
+    },
+    "functional_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_function", "secondary_functions", "top_features", "usp"],
+      "properties": {
+        "primary_function": { "type": "string" },
+        "secondary_functions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "top_features": {
+          "type": "array",
+          "description": "The three most advertising-relevant features.",
+          "items": { "type": "string" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "usp": { "type": "string", "description": "Unique Selling Proposition." }
+      }
+    },
+    "visual_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["benefit_visually_demonstrable", "visual_proof_strength", "before_after_possible", "transformation_possible"],
+      "properties": {
+        "benefit_visually_demonstrable": { "type": "boolean" },
+        "visual_proof_strength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "How strong the visual proof of the benefit is."
+        },
+        "before_after_possible": { "type": "boolean" },
+        "transformation_possible": { "type": "boolean" }
+      }
+    },
+    "customer_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_target", "secondary_target", "buying_situation", "daily_usage", "emotional_motivation", "functional_motivation"],
+      "properties": {
+        "primary_target": { "type": "string" },
+        "secondary_target": { "type": "string" },
+        "buying_situation": { "type": "string" },
+        "daily_usage": { "type": "string" },
+        "emotional_motivation": { "type": "string" },
+        "functional_motivation": { "type": "string" }
+      }
+    },
+    "pain_analysis": {
+      "type": "array",
+      "description": "Customer problems, ranked by severity (rank 1 = most severe).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["problem", "severity", "rank"],
+        "properties": {
+          "problem": { "type": "string" },
+          "severity": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "rank": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "objection_analysis": {
+      "type": "array",
+      "description": "Possible buying objections, ranked by probability (rank 1 = most probable).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["objection", "probability", "rank"],
+        "properties": {
+          "objection": { "type": "string" },
+          "probability": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "rank": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "competitive_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["existing_alternatives", "offline_alternative", "diy_alternative", "why_buy_this_instead"],
+      "properties": {
+        "existing_alternatives": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "offline_alternative": { "type": "string" },
+        "diy_alternative": { "type": "string" },
+        "why_buy_this_instead": { "type": "string" }
+      }
+    },
+    "virality_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scroll_stop_potential", "surprise_potential", "satisfaction_potential", "shareability", "comment_potential"],
+      "properties": {
+        "scroll_stop_potential": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "surprise_potential": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "satisfaction_potential": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "shareability": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "comment_potential": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "platform_recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_platform", "reason"],
+      "properties": {
+        "primary_platform": {
+          "type": "string",
+          "enum": ["Instagram Reels", "TikTok", "YouTube Shorts"]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this single platform was chosen, grounded in the analysis."
+        }
+      }
+    }
+  }
+}

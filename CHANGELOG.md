@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the eight-step decision workflow and the required structure for every
   decision (Reason, Confidence Score, Alternative Options, Expected Business
   Impact). Specification only — no implementation.
+- Product Intelligence Engine (PIE) specification
+  (`system/PRODUCT_INTELLIGENCE_ENGINE.md`): a rule-based, understand-first
+  product analysis engine with a full output schema (Product Identity,
+  Functional, Visual, Customer, Pain, Objection, Competitive, and Virality
+  analysis, plus a single Platform Recommendation).
+- PIE output contract as JSON Schema
+  (`data/schemas/product_intelligence.schema.json`).
 
 ## [v0.1] — Foundation
 
