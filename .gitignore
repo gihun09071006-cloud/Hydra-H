@@ -1,0 +1,39 @@
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Environment and secrets
+.env
+.env.*
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Build and distribution
+build/
+dist/
+
+# Data artifacts (keep schemas, ignore generated data)
+data/generated/
+*.cache
