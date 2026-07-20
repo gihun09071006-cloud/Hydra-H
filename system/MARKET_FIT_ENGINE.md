@@ -1,125 +1,103 @@
-# HYDRA Market Fit Scoring Engine — Specification
+# HYDRA Market Fit Engine — Specification
 
-The **Market Fit Scoring Engine** decides whether a product is worth creating
-advertisements for **before any creative asset is generated**. It is a go/no-go
-gate: it scores a product's advertising potential, ranks its strengths and
-weaknesses, and returns a clear recommendation.
+## Purpose
 
-> **Core principle — qualify before you create.**
-> This engine never generates creative. It estimates advertising viability so
-> that effort is spent only on products likely to perform.
+Evaluate whether a product deserves creative production.
 
-The engine is **rule-based**: every dimension is scored on a fixed, deterministic
-scale and the total is derived transparently. Identical inputs always produce the
-same Market Fit result.
+Before HYDRA creates any advertisement, the Market Fit Engine determines whether
+the product is worth advertising at all. The engine outputs a **Market Fit
+Score** *before any advertisement is generated*. A rejected product never
+proceeds to creative production.
+
+This document is a specification only. It defines the engine's inputs, output,
+scoring, and decision rules. It contains **no business logic, no AI prompt
+implementation, and no code**.
 
 ---
 
-## 1. Position in the Pipeline
+## Input
 
+**Product Intelligence JSON** — the Product Intelligence Record produced by the
+Product Intelligence Engine (`PRODUCT_INTELLIGENCE_ENGINE.md`).
+
+---
+
+## Output
+
+```json
+{
+  "market_fit_score": 0,
+  "decision": "",
+  "strengths": [],
+  "weaknesses": [],
+  "recommended_strategy": "",
+  "recommended_hook_type": "",
+  "confidence": 0
+}
 ```
-Product Intelligence Engine  ──►  Market Fit Scoring Engine  ──►  Decision Engine
-(understand the product)          (is it worth advertising?)      (decide the creative)
-                                          │
-                                   Reject ┴─►  stop (do not create)
-```
 
-The Market Fit Scoring Engine consumes the Product Intelligence Record (from
-`PRODUCT_INTELLIGENCE_ENGINE.md`) and acts as a gate. A `Reject` result stops the
-campaign before the Decision Engine is ever invoked. In state-machine terms this
-gate sits between `PRODUCT_ANALYZED` and `STRATEGY_SELECTED`.
-
----
-
-## 2. Scoring Model
-
-- **Scale.** Every dimension is scored as an integer **0–100** (higher = more
-  favorable for advertising). This matches the score scale used across HYDRA.
-- **Total.** The **Market Fit Score (0–100)** is the weighted aggregate of the
-  ten dimension scores, rounded to an integer. Default weighting is **equal**
-  (each dimension 10%); weights are configuration, not part of this contract.
-- **Deterministic.** Given the same dimension scores and weights, the total is
-  always the same.
-
-### 2.1 Scoring Dimensions
-
-All ten dimensions are scored 0–100, where **100 is most favorable for
-advertising**.
-
-| Dimension | 100 (favorable) means… |
-| --- | --- |
-| **Visual Demonstration** | The benefit is easy to show on screen. |
-| **Problem Severity** | It solves a painful, high-stakes problem. |
-| **Emotional Appeal** | It evokes a strong emotional response. |
-| **Impulse Purchase Potential** | It invites a fast, low-friction buy. |
-| **Price Advantage** | Its price is a clear advantage vs. alternatives. |
-| **Novelty** | It is new, surprising, or rarely seen. |
-| **Scroll Stop Potential** | It can stop the scroll in the first seconds. |
-| **Viral Potential** | It is likely to be shared and spread. |
-| **Competition Difficulty** | Competition is *low* — i.e. this dimension is scored **inversely**: a market that is easy to compete in scores high, a crowded/hard market scores low. |
-| **Creative Diversity** | Many distinct creative angles are possible. |
-
-> **Note on Competition Difficulty.** Higher real-world difficulty is *worse* for
-> market fit. To keep the total a simple "higher = better" aggregate, this
-> dimension records **competitive favorability** (100 = low difficulty / easy to
-> compete, 0 = extremely hard). The underlying raw difficulty may be retained
-> alongside for transparency.
+- `market_fit_score` — integer 0–100, the weighted total of the scoring
+  categories below.
+- `decision` — one of the decision tiers (see **Decision Rules**).
+- `strengths` — the product's strongest scoring categories, each with a reason.
+- `weaknesses` — the product's weakest scoring categories, each with a reason.
+- `recommended_strategy` — the marketing strategy the evidence points to.
+- `recommended_hook_type` — the hook type the evidence points to.
+- `confidence` — integer 0–100, how confident the evaluation is.
 
 ---
 
-## 3. Return Contract
+## Scoring Categories
 
-The engine returns the following, and only the following:
+Each category is scored up to its maximum. The maximums sum to **100**.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| **Total Score** | integer (0–100) | The overall Market Fit Score. |
-| **Dimension Scores** | 10 × integer (0–100) | Each dimension's score. |
-| **Top 3 Strengths** | 3 × dimension | The three highest-scoring dimensions. |
-| **Top 3 Weaknesses** | 3 × dimension | The three lowest-scoring dimensions. |
-| **Recommendation** | object | Priority tier + action + rationale (see §4). |
-
-- **Top 3 Strengths / Weaknesses** are derived directly from the dimension
-  scores (highest three and lowest three). Ties are broken by the dimension
-  order listed in §2.1.
-
----
-
-## 4. Decision Rule
-
-The Total Score maps to exactly one recommendation tier:
-
-| Total Score | Priority | Action |
-| --- | --- | --- |
-| **80–100** | **Priority A** | Create immediately. |
-| **60–79** | **Priority B** | Create if resources allow. |
-| **0–59** | **Reject** | Do not create. |
-
-The recommendation MUST include:
-
-- **Priority** — one of `Priority A`, `Priority B`, `Reject`.
-- **Action** — the corresponding action from the table above.
-- **Rationale** — grounded in the Top Strengths and Weaknesses (why this tier).
-
-A `Reject` result terminates the pipeline for this product; no creative is
-generated.
+| Category | Max Score |
+|-----------|----------:|
+| Visual Demonstration | 20 |
+| Problem Severity | 15 |
+| Emotional Appeal | 10 |
+| Impulse Buying | 10 |
+| Price Advantage | 10 |
+| Novelty | 10 |
+| Competition | 10 |
+| Trust | 5 |
+| Creative Diversity | 5 |
+| Viral Potential | 5 |
+| **Total** | **100** |
 
 ---
 
-## 5. Output Formats
+## Decision Rules
 
-- **Markdown** — this document is the human-readable specification and rule set.
-- **JSON** — the machine-readable return contract is
-  `data/schemas/market_fit.schema.json`; every Market Fit result validates
-  against it.
+The `market_fit_score` maps to exactly one decision tier:
+
+| Score | Decision |
+|-------|----------|
+| 90–100 | Create Immediately |
+| 80–89 | Priority A |
+| 70–79 | Priority B |
+| 60–69 | Optional |
+| Below 60 | Reject |
 
 ---
 
-## 6. Scope Boundary
+## Transparency Rules
+
+- **Every score must contain a written reason.** No category is scored without a
+  stated justification.
+- **No hidden reasoning.** The rationale behind every score is explicit and
+  inspectable.
+- **Every recommendation must include evidence.** The `decision`,
+  `recommended_strategy`, and `recommended_hook_type` are each backed by the
+  scored evidence that produced them.
+
+---
+
+## Scope Boundary
 
 | In scope | Out of scope |
 | --- | --- |
-| Estimating advertising viability | Generating advertisements |
-| Deterministic 0–100 dimension scoring | Generating prompts or creative |
-| Producing a total score + recommendation | Deciding creative direction |
-| Gating the pipeline (A / B / Reject) | Rendering or delivery |
+| Scoring advertising viability | Generating advertisements |
+| Weighted, reasoned category scores | Generating prompts or creative |
+| Producing a Market Fit Score + decision | Deciding final creative direction |
+| Gating the pipeline before creative | Rendering or delivery |
