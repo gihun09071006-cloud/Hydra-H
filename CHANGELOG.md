@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   analysis, plus a single Platform Recommendation).
 - PIE output contract as JSON Schema
   (`data/schemas/product_intelligence.schema.json`).
+- HYDRA State Machine specification (`system/STATE_MACHINE.md`): the fixed
+  nine-state campaign sequence (`INPUT_RECEIVED` → `READY_FOR_RENDER`) with a
+  no-skip guarantee, and per-state contracts (Inputs, Outputs, Success/Failure
+  Condition, Next/Previous State, Retry Logic).
 
 ## [v0.1] — Foundation
 
