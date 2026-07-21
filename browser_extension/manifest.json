@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "HYDRA Coupang Extractor",
+  "version": "0.1.0",
+  "description": "Extract normalized product data from the open Coupang product page and download it as JSON.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "HYDRA Coupang Extractor"
+  },
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "host_permissions": [
+    "https://www.coupang.com/*",
+    "https://coupang.com/*"
+  ]
+}

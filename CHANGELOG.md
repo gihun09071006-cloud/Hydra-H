@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- HYDRA Coupang browser extension MVP (`browser_extension/`): a Chrome
+  Manifest V3 extension that extracts normalized product data from the Coupang
+  product page open in the user's browser and downloads it as JSON. Minimal
+  permissions (`activeTab`, `scripting`, `downloads`), host access restricted to
+  Coupang only (no `<all_urls>`), and extraction gated to
+  `…/vp/products/…` pages. It only reads the already-rendered DOM / JSON-LD /
+  meta — no backend connection, automation, or anti-bot bypass. Output reuses
+  the ProductFacts field names where they overlap. Tests
+  (`tests/browser_extension/`) verify the MV3 structure, minimal permissions,
+  Coupang-only hosts, and the normalized extraction contract. No new schema or
+  documentation.
 - Local Coupang HTML input mode: run HYDRA from a locally saved product-page
   HTML file when direct HTTP fetching is blocked (e.g. HTTP 403), without any
   anti-bot bypass. `HydraPipeline.run_from_html(html, source_url)` validates the
