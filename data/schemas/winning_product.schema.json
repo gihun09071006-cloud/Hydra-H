@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra.dev/schemas/winning_product.schema.json",
+  "title": "Winning Product Record",
+  "description": "Data model for a researched product and its measured performance in HYDRA. Lets HYDRA learn from products that actually perform. Dataset structure only — no scraping, recommendation logic, or AI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "product_id",
+    "marketplace",
+    "country",
+    "category",
+    "product_name",
+    "product_url",
+    "affiliate_url",
+    "price",
+    "currency",
+    "hook_type",
+    "story_pattern",
+    "market_fit_score",
+    "publish_platform",
+    "publish_date",
+    "views",
+    "likes",
+    "comments",
+    "shares",
+    "ctr",
+    "conversion_rate",
+    "revenue",
+    "status"
+  ],
+  "$defs": {
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rate_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    }
+  },
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Stable HYDRA identifier for the product. Links to the Product Discovery record."
+    },
+    "marketplace": {
+      "type": "string",
+      "description": "Marketplace the product is sold on, e.g. Coupang."
+    },
+    "country": {
+      "type": "string",
+      "description": "Target market country."
+    },
+    "category": {
+      "type": "string",
+      "description": "Product category / niche."
+    },
+    "product_name": {
+      "type": "string",
+      "description": "Product name."
+    },
+    "product_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Link to the product listing."
+    },
+    "affiliate_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Affiliate / tracked link used in the published ad."
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Numeric price of the product."
+    },
+    "currency": {
+      "type": "string",
+      "description": "ISO 4217 currency code, e.g. KRW."
+    },
+    "hook_type": {
+      "type": "string",
+      "description": "Hook category used (aligned with the Creative Strategy Engine).",
+      "enum": [
+        "Curiosity",
+        "Shock",
+        "Question",
+        "Contrarian",
+        "Transformation",
+        "Demonstration",
+        "Authority"
+      ]
+    },
+    "story_pattern": {
+      "type": "string",
+      "description": "Story pattern used (aligned with the Creative Strategy Engine).",
+      "enum": [
+        "Problem → Solution",
+        "Before → After",
+        "POV",
+        "UGC",
+        "Lifestyle",
+        "Comparison"
+      ]
+    },
+    "market_fit_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Market Fit Engine score (0-100) the product was published with."
+    },
+    "publish_platform": {
+      "type": "string",
+      "description": "Platform the ad was published on.",
+      "enum": [
+        "Instagram Reels",
+        "TikTok",
+        "YouTube Shorts"
+      ]
+    },
+    "publish_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the ad was published (ISO 8601 date-time)."
+    },
+    "views": { "$ref": "#/$defs/count", "description": "Total views." },
+    "likes": { "$ref": "#/$defs/count", "description": "Total likes." },
+    "comments": { "$ref": "#/$defs/count", "description": "Total comments." },
+    "shares": { "$ref": "#/$defs/count", "description": "Total shares." },
+    "ctr": {
+      "$ref": "#/$defs/rate_percent",
+      "description": "Click-through rate as a percentage (0-100)."
+    },
+    "conversion_rate": {
+      "$ref": "#/$defs/rate_percent",
+      "description": "Conversion rate as a percentage (0-100)."
+    },
+    "revenue": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Revenue attributed to the product, in `currency`."
+    },
+    "status": {
+      "type": "string",
+      "description": "Research lifecycle state of the product.",
+      "enum": [
+        "testing",
+        "winner",
+        "loser",
+        "archived"
+      ]
+    }
+  }
+}

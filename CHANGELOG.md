@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Winning Product dataset foundation: lets HYDRA learn from products that
+  actually perform. Adds the Winning Product schema
+  (`data/schemas/winning_product.schema.json`) capturing product identity,
+  creative choices (hook type, story pattern, publish platform), and measured
+  performance (views, likes, comments, shares, CTR, conversion rate, revenue)
+  with a four-state lifecycle (testing, winner, loser, archived), and the
+  research dataset (`datasets/research/README.md`) documenting its lifecycle and
+  relationships to Product Discovery and performance learning. Dataset structure
+  only — no scraping, recommendation logic, or AI.
 - Product Discovery foundation: a data model deciding which product deserves an
   advertisement before any creative is generated. Adds the Product Discovery
   schema (`data/schemas/product_discovery.schema.json`) with the discovery
