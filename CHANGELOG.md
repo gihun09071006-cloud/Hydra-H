@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Internal AI contracts (`contracts/`): strongly typed Python dataclasses shared
+  between Engines and Providers so a Provider never returns an arbitrary dict.
+  Adds `ProductFacts`, `ProductIntelligence` (with nested identity/analysis
+  types), `CreativeStrategy`, `Storyboard`, and `RenderPrompt`, each with
+  `to_dict` / `from_dict` serialization and no external dependencies. Unit tests
+  (`tests/contracts/test_contracts.py`) cover serialization, deserialization,
+  equality, and default values. No documentation or schemas.
 - AI provider abstraction (`providers/`): an interface layer so Engines never
   call a specific LLM directly. Adds the `AIProvider` base interface
   (`providers/base/provider.py`) with `analyze_product`,
