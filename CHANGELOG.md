@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Market Fit Engine implementation (`engines/market_fit_engine.py`): executes
+  the existing specification — consumes a Product Intelligence object and returns
+  a Market Fit object (score, decision, strengths, weaknesses,
+  recommended_strategy, recommended_hook_type, confidence). Deterministic scoring
+  across the ten weighted categories with a written reason per score, and the
+  decision thresholds from the spec. Unit tests
+  (`tests/engines/test_market_fit_engine.py`) cover low / medium / high score
+  products, the decision thresholds, and schema-valid output. No new
+  specification or schema.
 - Winning Product dataset foundation: lets HYDRA learn from products that
   actually perform. Adds the Winning Product schema
   (`data/schemas/winning_product.schema.json`) capturing product identity,
