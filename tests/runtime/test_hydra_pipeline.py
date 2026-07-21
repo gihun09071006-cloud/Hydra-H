@@ -132,3 +132,48 @@ def test_no_network(monkeypatch):
     monkeypatch.setattr(socket, "socket", _boom)
     result = HydraPipeline(adapter=_fake_adapter()).run(AFFILIATE_URL)
     assert isinstance(result, RenderPrompt)
+
+
+# -- local HTML mode (run_from_html) ---------------------------------------
+
+def test_run_from_html_succeeds_with_affiliate_source():
+    result = HydraPipeline().run_from_html(PRODUCT_HTML, AFFILIATE_URL)
+    assert isinstance(result, RenderPrompt)
+
+
+def test_run_from_html_accepts_direct_source():
+    result = HydraPipeline().run_from_html(PRODUCT_HTML, DIRECT_URL)
+    assert isinstance(result, RenderPrompt)
+
+
+def test_run_from_html_rejects_empty_html():
+    pipeline = HydraPipeline()
+    with pytest.raises(ValueError):
+        pipeline.run_from_html("", AFFILIATE_URL)
+    with pytest.raises(ValueError):
+        pipeline.run_from_html("   ", AFFILIATE_URL)
+
+
+def test_run_from_html_rejects_invalid_source_domain():
+    with pytest.raises(ValueError):
+        HydraPipeline().run_from_html(PRODUCT_HTML, "https://evil.example.com/x")
+
+
+def test_run_from_html_reuses_parser_and_engine_sequence():
+    provider = RecordingProvider()
+    HydraPipeline(provider=provider).run_from_html(PRODUCT_HTML, AFFILIATE_URL)
+    assert provider.calls == [
+        "analyze_product",
+        "generate_creative_strategy",
+        "generate_story",
+        "compile_prompt",
+    ]
+
+
+def test_run_from_html_makes_no_network(monkeypatch):
+    def _boom(*args, **kwargs):
+        raise AssertionError("network access attempted")
+
+    monkeypatch.setattr(socket, "socket", _boom)
+    result = HydraPipeline().run_from_html(PRODUCT_HTML, AFFILIATE_URL)
+    assert isinstance(result, RenderPrompt)

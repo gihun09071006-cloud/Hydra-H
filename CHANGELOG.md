@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Local Coupang HTML input mode: run HYDRA from a locally saved product-page
+  HTML file when direct HTTP fetching is blocked (e.g. HTTP 403), without any
+  anti-bot bypass. `HydraPipeline.run_from_html(html, source_url)` validates the
+  source URL as a Coupang affiliate/product URL, rejects empty HTML, and reuses
+  the same parser + engine chain as URL mode (shared `_run_from_html`). The CLI
+  gains `--html-file` and `--source-url`: exactly one of URL mode or HTML mode,
+  `--source-url` required with `--html-file`, UTF-8 file reading, and concise
+  non-zero failures. The adapter adds `validate_source_url` reusing its existing
+  strict validation. Tests cover both modes, argument errors, missing/empty
+  files, invalid source domain, engine sequence, and no networking. No new
+  schema or documentation.
 - Real Coupang HTTP fetching (`adapters/coupang/coupang_adapter.py`):
   `CoupangAdapter.fetch()` now performs real HTTP via an injectable/mockable
   client (defaults to `requests`), replacing the placeholder. Accepts affiliate

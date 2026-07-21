@@ -109,3 +109,63 @@ def test_cli_makes_no_network_calls(capsys, monkeypatch):
 
     monkeypatch.setattr(socket, "socket", _boom)
     assert hydra.main([AFFILIATE_URL], pipeline=_fake_pipeline()) == 0
+
+
+# -- local HTML mode --------------------------------------------------------
+
+def _html_file(tmp_path, content=PRODUCT_HTML):
+    path = tmp_path / "product.html"
+    path.write_text(content, encoding="utf-8")
+    return str(path)
+
+
+def test_local_html_mode_succeeds(capsys, tmp_path):
+    code = hydra.main(["--html-file", _html_file(tmp_path), "--source-url", AFFILIATE_URL])
+    assert code == 0
+    parsed = json.loads(capsys.readouterr().out)
+    assert set(parsed) == {"target_backend", "prompt", "negative_prompt", "metadata"}
+
+
+def test_local_html_mode_accepts_direct_source(capsys, tmp_path):
+    code = hydra.main(["--html-file", _html_file(tmp_path), "--source-url", DIRECT_URL])
+    assert code == 0
+    assert json.loads(capsys.readouterr().out)
+
+
+def test_local_html_mode_requires_source_url(capsys, tmp_path):
+    code = hydra.main(["--html-file", _html_file(tmp_path)])
+    assert code != 0
+    assert "source-url" in capsys.readouterr().err
+
+
+def test_url_and_html_together_rejected(capsys, tmp_path):
+    code = hydra.main([AFFILIATE_URL, "--html-file", _html_file(tmp_path), "--source-url", AFFILIATE_URL])
+    assert code != 0
+    assert capsys.readouterr().err
+
+
+def test_missing_html_file_rejected(capsys):
+    code = hydra.main(["--html-file", "does_not_exist.html", "--source-url", AFFILIATE_URL])
+    assert code != 0
+    assert "not found" in capsys.readouterr().err.lower()
+
+
+def test_empty_html_file_rejected(capsys, tmp_path):
+    code = hydra.main(["--html-file", _html_file(tmp_path, "   "), "--source-url", AFFILIATE_URL])
+    assert code != 0
+    assert capsys.readouterr().err
+
+
+def test_invalid_source_domain_rejected(capsys, tmp_path):
+    code = hydra.main(["--html-file", _html_file(tmp_path), "--source-url", "https://evil.example.com/x"])
+    assert code != 0
+    assert capsys.readouterr().err
+
+
+def test_local_html_mode_makes_no_network(capsys, tmp_path, monkeypatch):
+    def _boom(*args, **kwargs):
+        raise AssertionError("network access attempted")
+
+    monkeypatch.setattr(socket, "socket", _boom)
+    code = hydra.main(["--html-file", _html_file(tmp_path), "--source-url", AFFILIATE_URL])
+    assert code == 0

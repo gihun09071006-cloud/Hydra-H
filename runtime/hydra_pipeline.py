@@ -49,25 +49,42 @@ class HydraPipeline:
         self._strategy = CreativeStrategyEngine(provider)
         self._story = StoryEngine(provider)
         self._compiler = PromptCompilerEngine(provider)
+        self._source_url: Optional[str] = None
 
     def run(self, url: str) -> RenderPrompt:
-        """Execute the pipeline for ``url`` and return a RenderPrompt."""
+        """Execute the pipeline for ``url`` (fetch mode) and return a RenderPrompt."""
         if not isinstance(url, str) or not url.strip():
             raise ValueError("url must be a non-empty string")
 
-        # 1. Detect URL type and let the Adapter fetch the raw source. The
-        #    Adapter is responsible for following redirects for affiliate links;
-        #    the pipeline never manually parses/rewrites the URL.
+        # Detect URL type and let the Adapter fetch the raw source. The Adapter
+        # is responsible for following redirects for affiliate links; the
+        # pipeline never manually parses/rewrites the URL.
         self._adapter.is_affiliate_url(url)  # detection is delegated to the Adapter
         html = self._adapter.fetch(url)
+        return self._run_from_html(html)
 
-        # 2. Run the pipeline stages in order.
+    def run_from_html(self, html: str, source_url: str) -> RenderPrompt:
+        """Execute the pipeline from locally saved HTML and return a RenderPrompt.
+
+        Use when direct HTTP fetching is blocked. The HTML must come from a page
+        the user opened normally in their own browser; this method performs no
+        network access and no anti-bot bypass. ``source_url`` is validated as a
+        Coupang affiliate/product URL and preserved as source metadata.
+        """
+        # 1. Validate the source URL (recorded as metadata; not fetched).
+        self._adapter.validate_source_url(source_url)
+        self._source_url = source_url
+        # 2. Reject empty HTML.
+        if not isinstance(html, str) or not html.strip():
+            raise ValueError("html must be a non-empty string")
+        # 3-5. Same parser + engine chain as URL mode.
+        return self._run_from_html(html)
+
+    def _run_from_html(self, html: str) -> RenderPrompt:
+        """Shared post-fetch orchestration for both URL and local-HTML modes."""
         facts = ProductFacts.from_dict(self._parser.extract(html))
         product_intelligence = self._intelligence.analyze(facts)
         market_fit = self._market_fit.evaluate(product_intelligence.to_dict())
         strategy = self._strategy.decide(product_intelligence, market_fit)
         storyboard = self._story.generate(strategy)
-        render_prompt = self._compiler.compile(storyboard)
-
-        # 3. Return the RenderPrompt.
-        return render_prompt
+        return self._compiler.compile(storyboard)

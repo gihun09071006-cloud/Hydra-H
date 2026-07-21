@@ -143,6 +143,15 @@ class CoupangAdapter(ProductAdapter):
         self._final_url = final_url
         return body
 
+    def validate_source_url(self, url: str) -> None:
+        """Validate a source URL as a Coupang affiliate or product URL.
+
+        Used by local-HTML mode, where the URL is recorded as source metadata
+        rather than fetched. Reuses the same strict validation as :meth:`fetch`
+        (no weakening). Raises :class:`InvalidCoupangURLError` if invalid.
+        """
+        self._validate_request_url(url)
+
     def _client(self) -> Any:
         if self._http_client is None:
             if _requests is None:  # pragma: no cover - requests is present here
