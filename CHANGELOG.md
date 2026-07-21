@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Creative Strategy Engine (CSE) specification
+  (`system/CREATIVE_STRATEGY_ENGINE.md`): selects the single best advertising
+  strategy from the Product Intelligence Record and Market Fit Result, emitting
+  one strategy plus hook type, story pattern, and CTA style with full reasoning
+  and a 0–100 confidence. Includes declarative, extensible strategy-mapping
+  rules with a signal-source table mapping to canonical schema fields, and
+  documented compatibility with the Product Intelligence schema, Market Fit
+  Engine, and State Machine.
 - Product Intelligence schema documentation (`docs/PRODUCT_INTELLIGENCE.md`):
   documents every field of the single canonical schema
   (`data/schemas/product_intelligence.schema.json`) with purpose, type,
