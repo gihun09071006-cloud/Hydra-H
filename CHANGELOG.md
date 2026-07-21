@@ -35,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Product Intelligence Parser implementation (`parsers/product_parser.py`):
+  converts a raw HTML string into a valid Product Intelligence object using HTML
+  parsing only (no browser automation, external APIs, or network). Extracts
+  product name, brand, price, currency, category, main image, description,
+  features, and seller from JSON-LD and meta/markup, returning null/empty for
+  missing values (never fabricated) and mapping onto the existing schema with
+  neutral placeholders for non-extractable required fields. Acceptance tests
+  (`tests/parsers/test_product_parser.py`) with an HTML fixture
+  (`tests/fixtures/coupang_product_sample.html`) cover valid HTML, missing
+  optional fields, invalid HTML, and schema validation. No new spec or schema.
 - Market Fit Engine implementation (`engines/market_fit_engine.py`): executes
   the existing specification — consumes a Product Intelligence object and returns
   a Market Fit object (score, decision, strengths, weaknesses,
