@@ -35,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Real Coupang HTTP fetching (`adapters/coupang/coupang_adapter.py`):
+  `CoupangAdapter.fetch()` now performs real HTTP via an injectable/mockable
+  client (defaults to `requests`), replacing the placeholder. Accepts affiliate
+  and direct product URLs, follows redirects, and returns raw product-page HTML
+  with browser-like headers, an explicit timeout, and UTF-8 text. Security: only
+  `link.coupang.com` / `www.coupang.com` / `coupang.com` may be requested;
+  rejects non-HTTPS, non-Coupang, external or non-product redirect destinations,
+  empty bodies, and non-HTML responses; validates both the original and final
+  URLs. Descriptive adapter exceptions for invalid URL, timeout, connection,
+  HTTP error, invalid redirect, non-HTML, and empty responses. Adds
+  `requirements.txt` (requests). Runtime and CLI tests inject a mocked HTTP
+  session (no real network). No new schema or documentation.
 - HYDRA CLI runner (`hydra.py`): a command-line entry point that takes one
   Coupang URL (affiliate or direct product), creates the Claude placeholder
   provider via `ProviderFactory`, runs the existing `HydraPipeline`, and prints

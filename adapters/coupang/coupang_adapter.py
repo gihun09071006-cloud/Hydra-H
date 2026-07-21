@@ -1,17 +1,18 @@
-"""Coupang marketplace adapter (placeholder).
+"""Coupang marketplace adapter.
 
-This is HYDRA's first executable marketplace adapter. It validates Coupang
-product URLs and returns a Product Intelligence Record that conforms to
-``data/schemas/product_intelligence.schema.json``.
+Fetches raw Coupang product-page HTML over HTTP for the existing
+:class:`ProductParser`. It accepts Coupang Partners affiliate URLs and direct
+Coupang product URLs; affiliate URLs are resolved by following normal HTTP
+redirects.
 
-Placeholder scope (by design):
-    * No web scraping.
-    * No browser automation.
-    * No external API calls.
+Boundary: :meth:`fetch` only retrieves *validated raw HTML*. It never parses
+product fields, builds ProductFacts, calls an LLM, contains marketing or
+affiliate-publishing logic, or alters the original affiliate URL. The original
+affiliate URL remains the external publishing link; the final redirected URL is
+internal product-analysis metadata only.
 
-Instead, :meth:`load` returns mock source data. The real data-acquisition
-strategy will replace :meth:`load`/:meth:`extract` in a future milestone without
-changing the :class:`ProductAdapter` interface or any downstream engine.
+The legacy :meth:`load` / :meth:`extract` / :meth:`to_product_intelligence`
+placeholder path is retained for backward compatibility.
 """
 
 from __future__ import annotations
@@ -20,6 +21,52 @@ from typing import Any
 from urllib.parse import urlparse
 
 from adapters.base.product_adapter import ProductAdapter
+
+try:  # HTTP client is optional at import time; the default session needs it.
+    import requests as _requests
+    from requests import exceptions as _rexc
+except ImportError:  # pragma: no cover - requests is available in this project
+    _requests = None
+    _rexc = None
+
+# Exceptions raised from client.get() mapped to descriptive adapter errors.
+_TIMEOUT_EXCEPTIONS: tuple[type[BaseException], ...] = (TimeoutError,)
+_CONNECTION_EXCEPTIONS: tuple[type[BaseException], ...] = (ConnectionError, OSError)
+if _rexc is not None:
+    _TIMEOUT_EXCEPTIONS = _TIMEOUT_EXCEPTIONS + (_rexc.Timeout,)
+    _CONNECTION_EXCEPTIONS = _CONNECTION_EXCEPTIONS + (_rexc.ConnectionError, _rexc.RequestException)
+
+
+class CoupangFetchError(Exception):
+    """Base class for Coupang adapter fetch failures."""
+
+
+class InvalidCoupangURLError(CoupangFetchError, ValueError):
+    """The requested URL is not a valid/allowed Coupang URL."""
+
+
+class InvalidRedirectError(CoupangFetchError, ValueError):
+    """A redirect ended on an invalid (external or non-product) destination."""
+
+
+class CoupangHTTPError(CoupangFetchError):
+    """The server returned an error HTTP status."""
+
+
+class CoupangTimeoutError(CoupangFetchError):
+    """The request timed out."""
+
+
+class CoupangConnectionError(CoupangFetchError):
+    """The request failed to connect."""
+
+
+class NonHtmlResponseError(CoupangFetchError):
+    """The response was not HTML."""
+
+
+class EmptyResponseError(CoupangFetchError):
+    """The response body was empty."""
 
 
 class CoupangAdapter(ProductAdapter):
@@ -33,39 +80,128 @@ class CoupangAdapter(ProductAdapter):
     #: Host used by Coupang affiliate (short) links.
     _AFFILIATE_HOST = "link.coupang.com"
 
-    #: Mock product-listing HTML returned by ``fetch`` (placeholder — no network).
-    _MOCK_HTML = """<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta property="og:title" content="Cordless Neck &amp; Shoulder Massager">
-  <meta property="og:image" content="https://image.coupang.com/products/massager-main.jpg">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "Cordless Neck & Shoulder Massager",
-    "brand": {"@type": "Brand", "name": "RelaxPro"},
-    "category": "Health & Wellness",
-    "image": "https://image.coupang.com/products/massager-main.jpg",
-    "description": "Deep-kneading cordless massager with heat therapy for neck and shoulders.",
-    "offers": {"@type": "Offer", "price": "39900", "priceCurrency": "KRW"}
-  }
-  </script>
-</head>
-<body>
-  <span class="seller-name">RelaxPro Official Store</span>
-  <ul class="feature-list">
-    <li class="prod-feature">Cordless wearable design</li>
-    <li class="prod-feature">Heat therapy</li>
-    <li class="prod-feature">Adjustable intensity</li>
-  </ul>
-</body>
-</html>"""
+    #: The only hosts this adapter may request (SSRF guard).
+    _ALLOWED_HOSTS = frozenset({"link.coupang.com", "www.coupang.com", "coupang.com"})
 
-    def __init__(self) -> None:
+    #: Explicit request timeout in seconds.
+    _TIMEOUT = 10.0
+
+    #: Browser-like request headers.
+    _HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    def __init__(self, http_client: Any = None) -> None:
+        # An injectable/mockable HTTP session exposing ``get(url, headers,
+        # timeout, allow_redirects)``. Defaults to a requests.Session lazily.
+        self._http_client = http_client
         self._url: str | None = None
+        self._final_url: str | None = None
         self._raw: dict[str, Any] | None = None
         self._extracted: dict[str, Any] | None = None
+
+    # -- HTTP fetching -----------------------------------------------------
+
+    def fetch(self, url: str) -> str:
+        """Fetch and return the raw Coupang product-page HTML for ``url``.
+
+        Accepts a direct Coupang product URL or an affiliate link. Affiliate
+        links are resolved by following normal HTTP redirects. Both the original
+        URL and the final redirected URL are validated. Returns raw HTML only.
+        """
+        self._validate_request_url(url)
+
+        client = self._client()
+        try:
+            response = client.get(
+                url.strip(),
+                headers=dict(self._HEADERS),
+                timeout=self._TIMEOUT,
+                allow_redirects=True,
+            )
+        except _TIMEOUT_EXCEPTIONS as exc:
+            raise CoupangTimeoutError(f"Timed out fetching Coupang URL: {url}") from exc
+        except _CONNECTION_EXCEPTIONS as exc:
+            raise CoupangConnectionError(f"Connection failed fetching Coupang URL: {url}") from exc
+
+        self._validate_status(response, url)
+
+        final_url = str(getattr(response, "url", "") or "")
+        self._validate_final_product_url(final_url)
+
+        body = str(getattr(response, "text", "") or "")
+        self._validate_html(response, body)
+
+        # Keep the ORIGINAL url (external publishing link); the final redirected
+        # url is internal product-analysis metadata only.
+        self._url = url
+        self._final_url = final_url
+        return body
+
+    def _client(self) -> Any:
+        if self._http_client is None:
+            if _requests is None:  # pragma: no cover - requests is present here
+                raise RuntimeError(
+                    "No HTTP client available; install 'requests' or inject http_client"
+                )
+            self._http_client = _requests.Session()
+        return self._http_client
+
+    def _validate_request_url(self, url: str) -> None:
+        if not isinstance(url, str) or not url.strip():
+            raise InvalidCoupangURLError("URL must be a non-empty string")
+        parsed = urlparse(url.strip())
+        if parsed.scheme != "https":
+            raise InvalidCoupangURLError(f"URL must use HTTPS: {url}")
+        host = (parsed.hostname or "").lower()
+        if host not in self._ALLOWED_HOSTS:
+            raise InvalidCoupangURLError(f"Non-Coupang host: {host or url!r}")
+        if host == self._AFFILIATE_HOST:
+            return  # affiliate link — resolved by following redirects
+        if "products" not in parsed.path:
+            raise InvalidCoupangURLError(f"Not a Coupang product URL: {url}")
+
+    def _validate_final_product_url(self, final_url: str) -> None:
+        if not final_url:
+            raise InvalidRedirectError("No final URL after following redirects")
+        parsed = urlparse(final_url)
+        if parsed.scheme != "https":
+            raise InvalidRedirectError(f"Final URL is not HTTPS: {final_url}")
+        host = (parsed.hostname or "").lower()
+        if host not in self._ALLOWED_HOSTS:
+            raise InvalidRedirectError(f"Redirect ended on an external domain: {host}")
+        if host == self._AFFILIATE_HOST or "products" not in parsed.path:
+            raise InvalidRedirectError(
+                f"Redirect did not end on a Coupang product page: {final_url}"
+            )
+
+    @staticmethod
+    def _validate_status(response: Any, url: str) -> None:
+        # Equivalent to requests' raise_for_status(), but client-agnostic.
+        status = getattr(response, "status_code", None)
+        if status is not None and int(status) >= 400:
+            raise CoupangHTTPError(f"HTTP {status} fetching Coupang URL: {url}")
+
+    @staticmethod
+    def _validate_html(response: Any, body: str) -> None:
+        if not body or not body.strip():
+            raise EmptyResponseError("Empty response body from Coupang")
+        headers = getattr(response, "headers", {}) or {}
+        content_type = ""
+        try:
+            content_type = headers.get("Content-Type") or headers.get("content-type") or ""
+        except AttributeError:
+            for key, value in dict(headers).items():
+                if str(key).lower() == "content-type":
+                    content_type = value
+                    break
+        if "html" not in str(content_type).lower():
+            raise NonHtmlResponseError(f"Response is not HTML (Content-Type: {content_type!r})")
 
     # -- ProductAdapter interface ------------------------------------------
 
@@ -90,19 +226,6 @@ class CoupangAdapter(ProductAdapter):
         if parsed.scheme not in ("http", "https"):
             return False
         return parsed.netloc.lower() == self._AFFILIATE_HOST
-
-    def fetch(self, url: str) -> str:
-        """Return the raw product HTML for ``url``.
-
-        Accepts a direct Coupang product URL or an affiliate link. For affiliate
-        links the adapter is responsible for following the redirect to the
-        product page — here a placeholder that performs no network access and
-        returns mock HTML. Raises :class:`ValueError` for non-Coupang URLs.
-        """
-        if self.is_affiliate_url(url) or self.validate(url):
-            self._url = url
-            return self._MOCK_HTML
-        raise ValueError(f"Invalid Coupang URL: {url}")
 
     def load(self, url: str) -> dict[str, Any]:
         """Return mock source data for ``url``.

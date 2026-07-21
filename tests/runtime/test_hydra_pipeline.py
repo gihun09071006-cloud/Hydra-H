@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from adapters.coupang.coupang_adapter import CoupangAdapter  # noqa: E402
 from contracts.render_prompt import RenderPrompt  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
 from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
@@ -17,6 +18,27 @@ from runtime.hydra_pipeline import HydraPipeline  # noqa: E402
 
 AFFILIATE_URL = "https://link.coupang.com/a/abcdef"
 DIRECT_URL = "https://www.coupang.com/vp/products/1234567890"
+PRODUCT_HTML = (REPO_ROOT / "tests" / "fixtures" / "coupang_product_sample.html").read_text(
+    encoding="utf-8"
+)
+
+
+class _FakeResponse:
+    def __init__(self, url=DIRECT_URL, text=PRODUCT_HTML):
+        self.status_code = 200
+        self.url = url
+        self.text = text
+        self.headers = {"Content-Type": "text/html; charset=utf-8"}
+
+
+class _FakeSession:
+    def get(self, url, headers=None, timeout=None, allow_redirects=None):
+        return _FakeResponse()
+
+
+def _fake_adapter():
+    """A Coupang adapter whose HTTP is mocked — no real network."""
+    return CoupangAdapter(http_client=_FakeSession())
 
 
 class RecordingProvider(AIProvider):
@@ -56,18 +78,18 @@ class FailingProvider(RecordingProvider):
 
 
 def test_affiliate_url_accepted():
-    result = HydraPipeline().run(AFFILIATE_URL)
+    result = HydraPipeline(adapter=_fake_adapter()).run(AFFILIATE_URL)
     assert isinstance(result, RenderPrompt)
 
 
 def test_direct_coupang_url_accepted():
-    result = HydraPipeline().run(DIRECT_URL)
+    result = HydraPipeline(adapter=_fake_adapter()).run(DIRECT_URL)
     assert isinstance(result, RenderPrompt)
 
 
 def test_engines_run_in_correct_order_and_provider_called_correctly():
     provider = RecordingProvider()
-    HydraPipeline(provider=provider).run(DIRECT_URL)
+    HydraPipeline(provider=provider, adapter=_fake_adapter()).run(DIRECT_URL)
     assert provider.calls == [
         "analyze_product",
         "generate_creative_strategy",
@@ -81,12 +103,13 @@ def test_engines_run_in_correct_order_and_provider_called_correctly():
 
 
 def test_render_prompt_returned():
-    result = HydraPipeline(provider=RecordingProvider()).run(DIRECT_URL)
+    result = HydraPipeline(provider=RecordingProvider(), adapter=_fake_adapter()).run(DIRECT_URL)
     assert type(result) is RenderPrompt
     assert result.target_backend == "Higgsfield"
 
 
 def test_invalid_url_rejected():
+    # URL validation happens before any HTTP call, so the default adapter is fine.
     pipeline = HydraPipeline()
     with pytest.raises(ValueError):
         pipeline.run("https://www.amazon.com/dp/B000000000")
@@ -97,7 +120,7 @@ def test_invalid_url_rejected():
 def test_engine_exception_propagates():
     provider = FailingProvider()
     with pytest.raises(RuntimeError, match="story engine boom"):
-        HydraPipeline(provider=provider).run(DIRECT_URL)
+        HydraPipeline(provider=provider, adapter=_fake_adapter()).run(DIRECT_URL)
     # Execution stopped at the story stage; the compiler never ran.
     assert "compile_prompt" not in provider.calls
 
@@ -107,5 +130,5 @@ def test_no_network(monkeypatch):
         raise AssertionError("network access attempted")
 
     monkeypatch.setattr(socket, "socket", _boom)
-    result = HydraPipeline().run(AFFILIATE_URL)
+    result = HydraPipeline(adapter=_fake_adapter()).run(AFFILIATE_URL)
     assert isinstance(result, RenderPrompt)
