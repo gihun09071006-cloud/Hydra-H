@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Product Intelligence Engine implementation
+  (`engines/product_intelligence_engine.py`): orchestration only — validates a
+  `ProductFacts` contract, delegates analysis to the configured AI Provider
+  (`provider.analyze_product`), validates the result as a `ProductIntelligence`
+  contract, and returns it. Contains no prompt, scoring, or networking. Unit
+  tests (`tests/engines/test_product_intelligence_engine.py`) cover valid facts,
+  missing optional fields, invalid facts, provider-called-once, return type,
+  exception propagation, and no networking. No new schema or documentation.
 - Internal AI contracts (`contracts/`): strongly typed Python dataclasses shared
   between Engines and Providers so a Provider never returns an arbitrary dict.
   Adds `ProductFacts`, `ProductIntelligence` (with nested identity/analysis
