@@ -32,8 +32,13 @@ class AIProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def generate_creative_strategy(self, product_intelligence: dict[str, Any]) -> dict[str, Any]:
-        """Turn a Product Intelligence object into a Creative Strategy output."""
+    def generate_creative_strategy(
+        self,
+        product_intelligence: dict[str, Any],
+        market_fit_result: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Turn a Product Intelligence object (and Market Fit result) into a
+        Creative Strategy output."""
         raise NotImplementedError
 
     @abstractmethod

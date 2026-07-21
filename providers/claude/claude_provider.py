@@ -91,7 +91,11 @@ class ClaudeProvider(AIProvider):
             },
         }
 
-    def generate_creative_strategy(self, product_intelligence: dict[str, Any]) -> dict[str, Any]:
+    def generate_creative_strategy(
+        self,
+        product_intelligence: dict[str, Any],
+        market_fit_result: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return {
             "strategy": "Visual Demonstration",
             "reason": (

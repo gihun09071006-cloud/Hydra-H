@@ -35,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Creative Strategy Engine implementation
+  (`engines/creative_strategy_engine.py`): orchestration only — validates a
+  `ProductIntelligence` contract and a Market Fit result, delegates the creative
+  decision to the AI Provider (`provider.generate_creative_strategy`), validates
+  the returned `CreativeStrategy` contract, and returns it. Contains no prompt,
+  strategy logic, scoring, or networking. The provider interface's
+  `generate_creative_strategy` was extended to accept the Market Fit result
+  (backward-compatible default). Unit tests
+  (`tests/engines/test_creative_strategy_engine.py`) cover valid inputs, missing
+  optional fields, invalid inputs, provider-called-once, return type, invalid
+  provider output, exception propagation, and no networking. No new schema or
+  documentation.
 - Product Intelligence Engine implementation
   (`engines/product_intelligence_engine.py`): orchestration only — validates a
   `ProductFacts` contract, delegates analysis to the configured AI Provider
