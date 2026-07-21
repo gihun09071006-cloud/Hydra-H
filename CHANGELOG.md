@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- HYDRA CLI runner (`hydra.py`): a command-line entry point that takes one
+  Coupang URL (affiliate or direct product), creates the Claude placeholder
+  provider via `ProviderFactory`, runs the existing `HydraPipeline`, and prints
+  the returned RenderPrompt as indented UTF-8 JSON. Exit code 0 on success and
+  non-zero on failure, with concise error messages on stderr (no tracebacks).
+  Composition and user I/O only — no scraping, parsing, AI, or duplicated
+  pipeline logic. Includes a comment marking the future publishing-compliance
+  boundary (Coupang Partners disclosure enforced there, not on RenderPrompt).
+  Tests (`tests/cli/test_hydra_cli.py`) cover accepted URLs, argument errors,
+  invalid URL, JSON/contract output, failure exit codes, stderr, and no
+  networking. No new schema or documentation.
 - HYDRA runtime pipeline (`runtime/hydra_pipeline.py`): the application entry
   point. Given a Coupang URL (affiliate link or direct product URL) it runs the
   full pipeline — Adapter → Parser → ProductFacts → Product Intelligence Engine
