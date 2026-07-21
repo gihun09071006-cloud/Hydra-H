@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Coupang Product Adapter — HYDRA's first executable component. A marketplace
+  adapter architecture (`adapters/base/product_adapter.py`) with the
+  `ProductAdapter` interface (`validate`, `load`, `extract`,
+  `to_product_intelligence`) and a placeholder Coupang adapter
+  (`adapters/coupang/coupang_adapter.py`) that validates Coupang URLs and
+  returns mock Product Intelligence — no scraping, browser automation, or
+  external APIs. Includes an acceptance test
+  (`tests/adapters/test_coupang_adapter.py`) validating the output against the
+  Product Intelligence schema, and `requirements-dev.txt`.
 - Prompt Compiler specification (`system/PROMPT_COMPILER.md`): a model-agnostic
   compiler that converts a validated storyboard into a backend prompt payload
   (`target_backend`, `prompt`, `negative_prompt`, `metadata`) without modifying

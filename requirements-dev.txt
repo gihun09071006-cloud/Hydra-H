@@ -1,0 +1,4 @@
+# Development and test dependencies for HYDRA.
+# Install with: python3 -m pip install -r requirements-dev.txt
+jsonschema>=4.0
+pytest>=7.0
