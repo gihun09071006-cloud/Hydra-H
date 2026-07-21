@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- AI provider abstraction (`providers/`): an interface layer so Engines never
+  call a specific LLM directly. Adds the `AIProvider` base interface
+  (`providers/base/provider.py`) with `analyze_product`,
+  `generate_creative_strategy`, `generate_story`, and `compile_prompt`; a
+  placeholder `ClaudeProvider` (`providers/claude/claude_provider.py`) returning
+  deterministic mock responses with no networking, SDK, API keys, or randomness;
+  and a `ProviderFactory` (`providers/factory.py`) that creates providers by
+  name, raises `ValueError` for unknown names, and is extensible via
+  `register`. Unit tests (`tests/providers/`) verify the factory, interface
+  implementation, deterministic output, and absence of external calls. No new
+  spec or schema.
 - Product Intelligence Parser implementation (`parsers/product_parser.py`):
   converts a raw HTML string into a valid Product Intelligence object using HTML
   parsing only (no browser automation, external APIs, or network). Extracts
