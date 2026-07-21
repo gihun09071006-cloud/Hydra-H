@@ -38,3 +38,6 @@ dist/
 # Data artifacts (keep schemas, ignore generated data)
 data/generated/
 *.cache
+
+# Local web app runs (uploaded videos, generated plans, previews)
+output/

@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- HYDRA Local Web App for source-based short-form editing (`app.py`,
+  `webapp/`). Run `python app.py`, then upload one Coupang product JSON and
+  exactly five local source videos to generate a complete editing plan: video
+  metadata, source-role assignments (Hook → Problem → Solution → Proof → CTA),
+  a contiguous clip timeline with per-scene source in/out points, Korean
+  narration and captions, a BGM recommendation (mood/genre/BPM/energy curve),
+  an SFX cue plan, and publishing copy (title, description, hashtags, and the
+  mandatory Coupang Partners affiliate disclosure). Runs locally and offline by
+  default — stdlib-only HTTP server (`webapp/server.py`), a minimal
+  multipart/form-data parser (`webapp/multipart.py`), and a deterministic,
+  rule-based plan generator (`webapp/shortform_editor.py`) that reuses the
+  existing offline pipeline stages via `MockClaudeProvider`. No network calls
+  and no AI/paid APIs. An optional preview render (`webapp/media.py`) shells out
+  to a locally installed `ffmpeg`/`ffprobe` only when present and degrades
+  gracefully when absent. Generated runs are written under `output/` (ignored
+  by git). Never fabricates missing product facts (rating, reviews, price are
+  omitted from copy when absent). Covered by 35 offline tests under
+  `tests/webapp/`.
 - Advertising Decision Engine specification (`system/DECISION_ENGINE.md`):
   the eight-step decision workflow and the required structure for every
   decision (Reason, Confidence Score, Alternative Options, Expected Business
