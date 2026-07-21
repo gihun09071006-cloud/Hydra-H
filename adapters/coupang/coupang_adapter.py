@@ -30,6 +30,38 @@ class CoupangAdapter(ProductAdapter):
     #: Hosts recognized as Coupang.
     _COUPANG_HOST_SUFFIX = "coupang.com"
 
+    #: Host used by Coupang affiliate (short) links.
+    _AFFILIATE_HOST = "link.coupang.com"
+
+    #: Mock product-listing HTML returned by ``fetch`` (placeholder — no network).
+    _MOCK_HTML = """<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta property="og:title" content="Cordless Neck &amp; Shoulder Massager">
+  <meta property="og:image" content="https://image.coupang.com/products/massager-main.jpg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Cordless Neck & Shoulder Massager",
+    "brand": {"@type": "Brand", "name": "RelaxPro"},
+    "category": "Health & Wellness",
+    "image": "https://image.coupang.com/products/massager-main.jpg",
+    "description": "Deep-kneading cordless massager with heat therapy for neck and shoulders.",
+    "offers": {"@type": "Offer", "price": "39900", "priceCurrency": "KRW"}
+  }
+  </script>
+</head>
+<body>
+  <span class="seller-name">RelaxPro Official Store</span>
+  <ul class="feature-list">
+    <li class="prod-feature">Cordless wearable design</li>
+    <li class="prod-feature">Heat therapy</li>
+    <li class="prod-feature">Adjustable intensity</li>
+  </ul>
+</body>
+</html>"""
+
     def __init__(self) -> None:
         self._url: str | None = None
         self._raw: dict[str, Any] | None = None
@@ -49,6 +81,28 @@ class CoupangAdapter(ProductAdapter):
             return False
         # Coupang product URLs point at a product listing path.
         return "products" in parsed.path
+
+    def is_affiliate_url(self, url: str) -> bool:
+        """Return ``True`` for a Coupang affiliate (short) link."""
+        if not isinstance(url, str) or not url.strip():
+            return False
+        parsed = urlparse(url.strip())
+        if parsed.scheme not in ("http", "https"):
+            return False
+        return parsed.netloc.lower() == self._AFFILIATE_HOST
+
+    def fetch(self, url: str) -> str:
+        """Return the raw product HTML for ``url``.
+
+        Accepts a direct Coupang product URL or an affiliate link. For affiliate
+        links the adapter is responsible for following the redirect to the
+        product page — here a placeholder that performs no network access and
+        returns mock HTML. Raises :class:`ValueError` for non-Coupang URLs.
+        """
+        if self.is_affiliate_url(url) or self.validate(url):
+            self._url = url
+            return self._MOCK_HTML
+        raise ValueError(f"Invalid Coupang URL: {url}")
 
     def load(self, url: str) -> dict[str, Any]:
         """Return mock source data for ``url``.

@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- HYDRA runtime pipeline (`runtime/hydra_pipeline.py`): the application entry
+  point. Given a Coupang URL (affiliate link or direct product URL) it runs the
+  full pipeline — Adapter → Parser → ProductFacts → Product Intelligence Engine
+  → Market Fit Engine → Creative Strategy Engine → Story Engine → Prompt Compiler
+  Engine — and returns a `RenderPrompt`. Orchestration only; invalid URLs,
+  intermediate contracts, or engine failures stop execution and propagate. The
+  Coupang adapter gained `fetch()` / `is_affiliate_url()` so the adapter owns
+  raw-source loading and redirect following (placeholder, no network). Tests
+  (`tests/runtime/test_hydra_pipeline.py`) cover affiliate/direct URLs, engine
+  order, provider calls, return type, invalid URL, exception propagation, and no
+  networking. No new schema or documentation.
 - Prompt Compiler Engine implementation (`engines/prompt_compiler_engine.py`):
   orchestration only — validates a `Storyboard` contract, delegates prompt
   compilation to the AI Provider (`provider.compile_prompt`), validates the
