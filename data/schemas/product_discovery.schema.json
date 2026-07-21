@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hydra.dev/schemas/product_discovery.schema.json",
+  "title": "Product Discovery Record",
+  "description": "Data model for a discovered product candidate in HYDRA. Product Discovery decides which product deserves an advertisement before any creative is generated. Data model only — no scraping, recommendation logic, or AI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "product_id",
+    "marketplace",
+    "country",
+    "product_url",
+    "category",
+    "price",
+    "currency",
+    "estimated_margin",
+    "market_fit_score",
+    "discovery_source",
+    "discovery_date",
+    "status"
+  ],
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "description": "Stable HYDRA identifier for the discovered product."
+    },
+    "marketplace": {
+      "type": "string",
+      "description": "Marketplace the product was discovered on, e.g. Coupang."
+    },
+    "country": {
+      "type": "string",
+      "description": "Target market country."
+    },
+    "product_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Link to the product listing; the input to the marketplace adapter."
+    },
+    "category": {
+      "type": "string",
+      "description": "Product category / niche."
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Numeric price of the product."
+    },
+    "currency": {
+      "type": "string",
+      "description": "ISO 4217 currency code, e.g. KRW."
+    },
+    "estimated_margin": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Estimated profit margin as a percentage (0-100). Null until estimated."
+    },
+    "market_fit_score": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Market Fit Engine score (0-100). Null until the product has been evaluated."
+    },
+    "discovery_source": {
+      "type": "string",
+      "description": "Where/how the product was discovered, e.g. a marketplace ranking or feed."
+    },
+    "discovery_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the product was discovered (ISO 8601 date-time)."
+    },
+    "status": {
+      "type": "string",
+      "description": "Lifecycle state of the discovered product.",
+      "enum": [
+        "discovered",
+        "analyzing",
+        "approved",
+        "rejected",
+        "published"
+      ]
+    }
+  }
+}

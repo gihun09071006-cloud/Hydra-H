@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Product Discovery foundation: a data model deciding which product deserves an
+  advertisement before any creative is generated. Adds the Product Discovery
+  schema (`data/schemas/product_discovery.schema.json`) with the discovery
+  record fields and a five-state status lifecycle (discovered, analyzing,
+  approved, rejected, published), documentation (`system/PRODUCT_DISCOVERY.md`)
+  covering the discovery workflow, product lifecycle, and relationships to the
+  Product Adapter and Market Fit Engine, and the discovery dataset
+  (`datasets/discovery/README.md`). Data model only — no scraping,
+  recommendation logic, or AI.
 - Coupang Product Adapter — HYDRA's first executable component. A marketplace
   adapter architecture (`adapters/base/product_adapter.py`) with the
   `ProductAdapter` interface (`validate`, `load`, `extract`,
