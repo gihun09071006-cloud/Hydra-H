@@ -80,9 +80,23 @@ class HydraPipeline:
         # 3-5. Same parser + engine chain as URL mode.
         return self._run_from_html(html)
 
+    def run_from_product_facts(self, product_facts: ProductFacts) -> RenderPrompt:
+        """Execute the pipeline from a ProductFacts contract and return a RenderPrompt.
+
+        Used by facts-file mode (extension-captured JSON). Performs no network
+        access. Runs the same engine chain as URL and local-HTML modes.
+        """
+        if not isinstance(product_facts, ProductFacts):
+            raise TypeError("product_facts must be a ProductFacts instance")
+        return self._run_from_facts(product_facts)
+
     def _run_from_html(self, html: str) -> RenderPrompt:
-        """Shared post-fetch orchestration for both URL and local-HTML modes."""
+        """Parse raw HTML into ProductFacts, then run the shared engine chain."""
         facts = ProductFacts.from_dict(self._parser.extract(html))
+        return self._run_from_facts(facts)
+
+    def _run_from_facts(self, facts: ProductFacts) -> RenderPrompt:
+        """Shared engine sequencing for every input mode (no duplication)."""
         product_intelligence = self._intelligence.analyze(facts)
         market_fit = self._market_fit.evaluate(product_intelligence.to_dict())
         strategy = self._strategy.decide(product_intelligence, market_fit)

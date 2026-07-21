@@ -1,7 +1,8 @@
 """ProductFacts contract — raw extracted product information.
 
-Data only. This is what a marketplace adapter / parser extracts before any AI
-enrichment. Missing values are ``None`` (or an empty list); nothing is fabricated.
+Data only. This is what a marketplace adapter / parser / browser-extension
+capture produces before any AI enrichment. Missing values are ``None`` (or an
+empty list); nothing is fabricated.
 """
 
 from __future__ import annotations
@@ -23,6 +24,14 @@ class ProductFacts:
     seller_name: Optional[str] = None
     marketplace: Optional[str] = None
     country: Optional[str] = None
+    # Capture metadata (populated by richer sources such as the browser extension).
+    source_url: Optional[str] = None
+    affiliate_url: Optional[str] = None
+    image_urls: list[str] = field(default_factory=list)
+    product_id: Optional[str] = None
+    item_id: Optional[str] = None
+    rating: Optional[float] = None
+    review_count: Optional[int] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -42,4 +51,11 @@ class ProductFacts:
             seller_name=data.get("seller_name"),
             marketplace=data.get("marketplace"),
             country=data.get("country"),
+            source_url=data.get("source_url"),
+            affiliate_url=data.get("affiliate_url"),
+            image_urls=list(data.get("image_urls") or []),
+            product_id=data.get("product_id"),
+            item_id=data.get("item_id"),
+            rating=data.get("rating"),
+            review_count=data.get("review_count"),
         )

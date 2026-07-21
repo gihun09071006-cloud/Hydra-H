@@ -177,3 +177,41 @@ def test_run_from_html_makes_no_network(monkeypatch):
     monkeypatch.setattr(socket, "socket", _boom)
     result = HydraPipeline().run_from_html(PRODUCT_HTML, AFFILIATE_URL)
     assert isinstance(result, RenderPrompt)
+
+
+# -- facts-file mode (run_from_product_facts) ------------------------------
+
+def _facts():
+    from contracts.product_facts import ProductFacts
+    return ProductFacts(product_name="Cordless Massager", price=39900, currency="KRW",
+                        marketplace="coupang", source_url=DIRECT_URL)
+
+
+def test_run_from_product_facts_returns_render_prompt():
+    result = HydraPipeline().run_from_product_facts(_facts())
+    assert isinstance(result, RenderPrompt)
+
+
+def test_run_from_product_facts_requires_contract():
+    with pytest.raises(TypeError):
+        HydraPipeline().run_from_product_facts({"product_name": "X"})
+
+
+def test_run_from_product_facts_engine_sequence():
+    provider = RecordingProvider()
+    HydraPipeline(provider=provider).run_from_product_facts(_facts())
+    assert provider.calls == [
+        "analyze_product",
+        "generate_creative_strategy",
+        "generate_story",
+        "compile_prompt",
+    ]
+
+
+def test_run_from_product_facts_makes_no_network(monkeypatch):
+    def _boom(*args, **kwargs):
+        raise AssertionError("network access attempted")
+
+    monkeypatch.setattr(socket, "socket", _boom)
+    result = HydraPipeline().run_from_product_facts(_facts())
+    assert isinstance(result, RenderPrompt)

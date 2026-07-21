@@ -35,6 +35,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- ProductFacts JSON input mode: run the pipeline from a JSON file exported by
+  the Coupang browser extension. The CLI gains `--facts-file` (mutually
+  exclusive with URL and `--html-file` modes); `runtime/extension_facts.py`
+  validates and maps the extension JSON onto the existing ProductFacts contract
+  (seller→seller_name, image_urls[0]→main_image_url, product_url→source_url,
+  affiliate_url preserved); `HydraPipeline.run_from_product_facts()` runs the
+  same engine chain via a shared `_run_from_facts`. ProductFacts was extended
+  (single contract, not duplicated) with source_url, affiliate_url, image_urls,
+  product_id, item_id, rating, and review_count. Validation rejects missing
+  file, invalid JSON, non-object JSON, missing product_name/product_url, bad
+  price/image_urls types, and unsupported marketplace. Tests use the real
+  extension-output shape; facts-file mode makes no network calls. No new schema
+  or documentation.
 - HYDRA Coupang browser extension MVP (`browser_extension/`): a Chrome
   Manifest V3 extension that extracts normalized product data from the Coupang
   product page open in the user's browser and downloads it as JSON. Minimal

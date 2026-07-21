@@ -169,3 +169,58 @@ def test_local_html_mode_makes_no_network(capsys, tmp_path, monkeypatch):
     monkeypatch.setattr(socket, "socket", _boom)
     code = hydra.main(["--html-file", _html_file(tmp_path), "--source-url", AFFILIATE_URL])
     assert code == 0
+
+
+# -- facts-file mode --------------------------------------------------------
+
+EXTENSION_JSON = (REPO_ROOT / "tests" / "fixtures" / "coupang_extension_sample.json").read_text(
+    encoding="utf-8"
+)
+
+
+def _facts_file(tmp_path, content=EXTENSION_JSON):
+    path = tmp_path / "coupang_product.json"
+    path.write_text(content, encoding="utf-8")
+    return str(path)
+
+
+def test_facts_file_mode_succeeds(capsys, tmp_path):
+    code = hydra.main(["--facts-file", _facts_file(tmp_path)])
+    assert code == 0
+    parsed = json.loads(capsys.readouterr().out)
+    assert set(parsed) == {"target_backend", "prompt", "negative_prompt", "metadata"}
+
+
+def test_facts_file_and_url_mutually_exclusive(capsys, tmp_path):
+    code = hydra.main([AFFILIATE_URL, "--facts-file", _facts_file(tmp_path)])
+    assert code != 0
+    assert capsys.readouterr().err
+
+
+def test_facts_file_invalid_json_rejected(capsys, tmp_path):
+    code = hydra.main(["--facts-file", _facts_file(tmp_path, "{ not valid json ")])
+    assert code != 0
+    assert "json" in capsys.readouterr().err.lower()
+
+
+def test_facts_file_missing_required_rejected(capsys, tmp_path):
+    bad = json.loads(EXTENSION_JSON)
+    bad.pop("product_name")
+    code = hydra.main(["--facts-file", _facts_file(tmp_path, json.dumps(bad))])
+    assert code != 0
+    assert capsys.readouterr().err
+
+
+def test_facts_file_missing_file_rejected(capsys):
+    code = hydra.main(["--facts-file", "does_not_exist.json"])
+    assert code != 0
+    assert "not found" in capsys.readouterr().err.lower()
+
+
+def test_facts_file_mode_makes_no_network(capsys, tmp_path, monkeypatch):
+    def _boom(*args, **kwargs):
+        raise AssertionError("network access attempted")
+
+    monkeypatch.setattr(socket, "socket", _boom)
+    code = hydra.main(["--facts-file", _facts_file(tmp_path)])
+    assert code == 0

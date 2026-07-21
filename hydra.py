@@ -11,6 +11,9 @@ Usage::
     python hydra.py --html-file "D:\\path\\product.html" \\
         --source-url "https://link.coupang.com/a/example"
 
+    # Facts-file mode (JSON exported by the Coupang browser extension)
+    python hydra.py --facts-file "D:\\path\\coupang_product.json"
+
 Runs the existing :class:`HydraPipeline` and prints the returned RenderPrompt as
 indented UTF-8 JSON. Exit code 0 on success, non-zero on failure.
 
@@ -28,6 +31,7 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 from providers.factory import ProviderFactory
+from runtime.extension_facts import product_facts_from_extension
 from runtime.hydra_pipeline import HydraPipeline
 
 
@@ -54,6 +58,10 @@ def main(argv: Optional[Sequence[str]] = None, pipeline: Optional[HydraPipeline]
         "--source-url", dest="source_url",
         help="Original Coupang URL for the saved HTML, preserved as source metadata",
     )
+    parser.add_argument(
+        "--facts-file", dest="facts_file",
+        help="Path to a JSON file exported by the Coupang browser extension",
+    )
 
     try:
         args = parser.parse_args(argv)
@@ -61,27 +69,39 @@ def main(argv: Optional[Sequence[str]] = None, pipeline: Optional[HydraPipeline]
         # argparse already wrote a concise usage/error message to stderr.
         return int(exc.code) if exc.code is not None else 2
 
-    # Mode selection: exactly one of URL mode or local HTML mode.
-    if args.html_file and args.url:
-        print("hydra: error: provide either a URL or --html-file, not both", file=sys.stderr)
+    # Mode selection: exactly one of URL mode, local HTML mode, or facts-file mode.
+    selected = sum(bool(x) for x in (args.url, args.html_file, args.facts_file))
+    if selected == 0:
+        print("hydra: error: a URL, --html-file, or --facts-file is required", file=sys.stderr)
         return 2
-    if not args.html_file and not args.url:
-        print("hydra: error: a URL or --html-file is required", file=sys.stderr)
+    if selected > 1:
+        print(
+            "hydra: error: provide only one of a URL, --html-file, or --facts-file",
+            file=sys.stderr,
+        )
         return 2
     if args.html_file and not args.source_url:
         print("hydra: error: --source-url is required with --html-file", file=sys.stderr)
         return 2
 
+    missing_path = args.facts_file or args.html_file
     try:
         runner = pipeline or _build_pipeline()
-        if args.html_file:
+        if args.facts_file:
+            data = json.loads(Path(args.facts_file).read_text(encoding="utf-8"))
+            facts = product_facts_from_extension(data)
+            render_prompt = runner.run_from_product_facts(facts)
+        elif args.html_file:
             html = Path(args.html_file).read_text(encoding="utf-8")
             render_prompt = runner.run_from_html(html, args.source_url)
         else:
             render_prompt = runner.run(args.url)
         output = json.dumps(render_prompt.to_dict(), indent=2, ensure_ascii=False)
     except FileNotFoundError:
-        print(f"hydra: error: file not found: {args.html_file}", file=sys.stderr)
+        print(f"hydra: error: file not found: {missing_path}", file=sys.stderr)
+        return 1
+    except json.JSONDecodeError as exc:
+        print(f"hydra: error: invalid JSON in {args.facts_file}: {exc}", file=sys.stderr)
         return 1
     except Exception as exc:  # noqa: BLE001 - surface a concise message, not a traceback
         print(f"hydra: error: {exc}", file=sys.stderr)

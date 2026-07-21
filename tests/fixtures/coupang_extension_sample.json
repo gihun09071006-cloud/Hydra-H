@@ -1,0 +1,20 @@
+{
+  "marketplace": "coupang",
+  "affiliate_url": "https://link.coupang.com/a/fyAfUSA2c8",
+  "product_url": "https://www.coupang.com/vp/products/1234567890?itemId=98765",
+  "product_id": "1234567890",
+  "item_id": "98765",
+  "product_name": "Cordless Neck & Shoulder Massager",
+  "price": 39900,
+  "currency": "KRW",
+  "image_urls": [
+    "https://image.coupang.com/products/massager-main.jpg",
+    "https://image.coupang.com/products/massager-2.jpg"
+  ],
+  "description": "Deep-kneading cordless massager with heat therapy for neck and shoulders.",
+  "features": ["Cordless wearable design", "Heat therapy", "Adjustable intensity"],
+  "rating": 4.7,
+  "review_count": 1234,
+  "seller": "RelaxPro Official Store",
+  "captured_at": "2026-07-21T00:00:00.000Z"
+}
