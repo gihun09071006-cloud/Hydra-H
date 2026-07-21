@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Prompt Compiler specification (`system/PROMPT_COMPILER.md`): a model-agnostic
+  compiler that converts a validated storyboard into a backend prompt payload
+  (`target_backend`, `prompt`, `negative_prompt`, `metadata`) without modifying
+  the story, preserving scene order and timing. Documents the current
+  (Higgsfield) and future (Veo, Runway, Kling, Pika) backends, a backend-only
+  extension strategy, output validation, and compatibility with the Story
+  Engine, Product Intelligence schema, and State Machine.
 - Story Engine (SGE) specification (`system/STORY_ENGINE.md`): transforms the
   Creative Strategy output into a structured short-form storyboard of ordered
   scenes (duration, goal, description) across the five mandatory phases (Hook,
