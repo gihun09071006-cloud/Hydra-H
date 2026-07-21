@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Prompt Compiler Engine implementation (`engines/prompt_compiler_engine.py`):
+  orchestration only — validates a `Storyboard` contract, delegates prompt
+  compilation to the AI Provider (`provider.compile_prompt`), validates the
+  returned `RenderPrompt` contract, and returns it. Contains no
+  prompt-engineering, rendering, Higgsfield-specific, or networking logic. Unit
+  tests (`tests/engines/test_prompt_compiler_engine.py`) cover valid input,
+  invalid input, provider-called-once, return type, invalid provider output,
+  exception propagation, and no networking. No new schema or documentation.
 - Story Engine implementation (`engines/story_engine.py`): orchestration only —
   validates a `CreativeStrategy` contract, delegates storyboard generation to the
   AI Provider (`provider.generate_story`), validates the returned `Storyboard`
