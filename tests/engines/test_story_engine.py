@@ -14,7 +14,7 @@ from contracts.creative_strategy import CreativeStrategy  # noqa: E402
 from contracts.storyboard import Storyboard  # noqa: E402
 from engines.story_engine import StoryEngine  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
-from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
+from providers.claude.mock_claude_provider import MockClaudeProvider  # noqa: E402
 
 
 class SpyProvider(AIProvider):
@@ -27,7 +27,7 @@ class SpyProvider(AIProvider):
         self.last_arg = None
         self._result = result
         self._raises = raises
-        self._delegate = ClaudeProvider()
+        self._delegate = MockClaudeProvider()
 
     def analyze_product(self, product_facts):
         raise NotImplementedError
@@ -88,7 +88,7 @@ def test_provider_called_exactly_once():
 
 
 def test_returned_object_is_storyboard():
-    result = StoryEngine(ClaudeProvider()).generate(VALID_STRATEGY)
+    result = StoryEngine(MockClaudeProvider()).generate(VALID_STRATEGY)
     assert type(result) is Storyboard
 
 
@@ -114,5 +114,5 @@ def test_engine_does_not_network(monkeypatch):
         raise AssertionError("network access attempted")
 
     monkeypatch.setattr(socket, "socket", _boom)
-    result = StoryEngine(ClaudeProvider()).generate(VALID_STRATEGY)
+    result = StoryEngine(MockClaudeProvider()).generate(VALID_STRATEGY)
     assert isinstance(result, Storyboard)

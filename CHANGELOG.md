@@ -48,6 +48,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   price/image_urls types, and unsupported marketplace. Tests use the real
   extension-output shape; facts-file mode makes no network calls. No new schema
   or documentation.
+- Real Anthropic Claude provider: `providers/claude/claude_provider.py`'s
+  `ClaudeProvider` now calls the Anthropic Messages API (official SDK, one call
+  per method, no retries/streaming/tools), parses strict JSON via a shared
+  `providers/json_response_parser.py`, and returns the existing contracts
+  (`ProductIntelligence`, `CreativeStrategy`, `Storyboard`, `RenderPrompt`). Four
+  pure prompt builders live in `prompts/` (JSON-only, exact contract keys, no
+  Markdown fences, null-over-invention, no chain-of-thought). The deterministic
+  placeholder moved to `MockClaudeProvider`
+  (`providers/claude/mock_claude_provider.py`). `ProviderFactory` selects by
+  `HYDRA_AI_MODE` (default `mock`; `live` requires `ANTHROPIC_API_KEY`, no silent
+  fallback); the pipeline's default provider is the mock so tests/local runs stay
+  offline. Configuration (model default `claude-opus-4-8`, overridable via
+  `ANTHROPIC_MODEL`) lives in one place; the API key is never logged, stored, or
+  committed. Adds `anthropic` to `requirements.txt`. Tests cover the parser, the
+  real provider via an injected fake client (contracts, one call, invalid JSON,
+  missing key, no network), and mock/live factory selection.
 - HYDRA Coupang browser extension MVP (`browser_extension/`): a Chrome
   Manifest V3 extension that extracts normalized product data from the Coupang
   product page open in the user's browser and downloads it as JSON. Minimal

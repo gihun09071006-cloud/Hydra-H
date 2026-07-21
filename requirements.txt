@@ -1,3 +1,5 @@
 # Runtime dependencies for HYDRA.
 # Install with: python3 -m pip install -r requirements.txt
 requests>=2.0
+# Required only for the live AI provider (HYDRA_AI_MODE=live); mock mode needs neither.
+anthropic>=0.40

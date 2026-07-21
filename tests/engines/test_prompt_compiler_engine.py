@@ -14,7 +14,7 @@ from contracts.render_prompt import RenderPrompt  # noqa: E402
 from contracts.storyboard import Scene, Storyboard  # noqa: E402
 from engines.prompt_compiler_engine import PromptCompilerEngine  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
-from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
+from providers.claude.mock_claude_provider import MockClaudeProvider  # noqa: E402
 
 
 class SpyProvider(AIProvider):
@@ -27,7 +27,7 @@ class SpyProvider(AIProvider):
         self.last_arg = None
         self._result = result
         self._raises = raises
-        self._delegate = ClaudeProvider()
+        self._delegate = MockClaudeProvider()
 
     def analyze_product(self, product_facts):
         raise NotImplementedError
@@ -87,7 +87,7 @@ def test_provider_called_exactly_once():
 
 
 def test_returned_object_is_render_prompt():
-    result = PromptCompilerEngine(ClaudeProvider()).compile(VALID_STORYBOARD)
+    result = PromptCompilerEngine(MockClaudeProvider()).compile(VALID_STORYBOARD)
     assert type(result) is RenderPrompt
 
 
@@ -114,5 +114,5 @@ def test_engine_does_not_network(monkeypatch):
         raise AssertionError("network access attempted")
 
     monkeypatch.setattr(socket, "socket", _boom)
-    result = PromptCompilerEngine(ClaudeProvider()).compile(VALID_STORYBOARD)
+    result = PromptCompilerEngine(MockClaudeProvider()).compile(VALID_STORYBOARD)
     assert isinstance(result, RenderPrompt)

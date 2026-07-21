@@ -1,7 +1,6 @@
-"""Unit tests for the Claude provider (placeholder).
+"""Unit tests for the real Anthropic-backed ClaudeProvider.
 
-Verifies interface implementation, deterministic outputs, contract shapes, and
-that no external/network calls occur.
+Uses an injectable fake Anthropic client — no real network, no API key.
 """
 
 import json
@@ -9,110 +8,133 @@ import socket
 import sys
 from pathlib import Path
 
-import jsonschema
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from contracts.creative_strategy import CreativeStrategy  # noqa: E402
+from contracts.product_intelligence import ProductIntelligence  # noqa: E402
+from contracts.render_prompt import RenderPrompt  # noqa: E402
+from contracts.storyboard import Storyboard  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
-from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
+from providers.claude.claude_provider import ClaudeProvider, ProviderConfigError  # noqa: E402
+from providers.claude.mock_claude_provider import MockClaudeProvider  # noqa: E402
+from providers.json_response_parser import ProviderResponseError  # noqa: E402
 
-PI_SCHEMA_PATH = REPO_ROOT / "data" / "schemas" / "product_intelligence.schema.json"
-
-INTERFACE_METHODS = (
-    "analyze_product",
-    "generate_creative_strategy",
-    "generate_story",
-    "compile_prompt",
-)
+MOCK = MockClaudeProvider()
 
 
-@pytest.fixture
-def provider():
-    return ClaudeProvider()
+class FakeBlock:
+    type = "text"
+
+    def __init__(self, text):
+        self.text = text
 
 
-def test_abstract_base_cannot_be_instantiated():
-    with pytest.raises(TypeError):
-        AIProvider()  # abstract
+class FakeResponse:
+    def __init__(self, text):
+        self.content = [FakeBlock(text)]
 
 
-def test_base_methods_raise_not_implemented():
-    class Stub(AIProvider):
-        def analyze_product(self, product_facts):
-            return super().analyze_product(product_facts)
+class FakeMessages:
+    def __init__(self, payload):
+        self._payload = payload
+        self.calls = []
 
-        def generate_creative_strategy(self, product_intelligence):
-            return super().generate_creative_strategy(product_intelligence)
-
-        def generate_story(self, strategy):
-            return super().generate_story(strategy)
-
-        def compile_prompt(self, story):
-            return super().compile_prompt(story)
-
-    stub = Stub()
-    with pytest.raises(NotImplementedError):
-        stub.analyze_product({})
-    with pytest.raises(NotImplementedError):
-        stub.generate_creative_strategy({})
-    with pytest.raises(NotImplementedError):
-        stub.generate_story({})
-    with pytest.raises(NotImplementedError):
-        stub.compile_prompt({})
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        text = self._payload if isinstance(self._payload, str) else json.dumps(self._payload)
+        return FakeResponse(text)
 
 
-def test_claude_implements_all_interface_methods(provider):
-    for method in INTERFACE_METHODS:
+class FakeClient:
+    def __init__(self, payload):
+        self.messages = FakeMessages(payload)
+
+
+def _provider(payload):
+    client = FakeClient(payload)
+    return ClaudeProvider(client=client), client
+
+
+def test_implements_all_interface_methods():
+    provider = ClaudeProvider(client=FakeClient({}))
+    assert isinstance(provider, AIProvider)
+    for method in ("analyze_product", "generate_creative_strategy", "generate_story", "compile_prompt"):
         assert callable(getattr(provider, method))
 
 
-def test_analyze_product_matches_product_intelligence_schema(provider):
-    schema = json.loads(PI_SCHEMA_PATH.read_text(encoding="utf-8"))
-    result = provider.analyze_product({"product_name": "Test", "brand": "B", "features": ["x", "y"]})
-    jsonschema.validate(instance=result, schema=schema)
+def test_analyze_product_returns_contract_with_one_call():
+    payload = MOCK.analyze_product({"product_name": "X", "features": ["a", "b"]})
+    provider, client = _provider(payload)
+    result = provider.analyze_product({"product_name": "X"})
+    assert isinstance(result, ProductIntelligence)
+    assert len(client.messages.calls) == 1
+    call = client.messages.calls[0]
+    assert call["model"]
+    assert call["system"]
+    assert call["messages"][0]["role"] == "user"
 
 
-def test_creative_strategy_contract(provider):
-    result = provider.generate_creative_strategy({})
-    assert set(result) == {
-        "strategy", "reason", "confidence", "hook_type", "story_pattern", "cta_style",
-    }
-    assert 0 <= result["confidence"] <= 100
+def test_generate_creative_strategy_returns_contract():
+    payload = MOCK.generate_creative_strategy({})
+    provider, client = _provider(payload)
+    result = provider.generate_creative_strategy(
+        ProductIntelligence().to_dict(), {"market_fit_score": 80, "decision": "Priority A"}
+    )
+    assert isinstance(result, CreativeStrategy)
+    assert len(client.messages.calls) == 1
 
 
-def test_story_contract(provider):
-    result = provider.generate_story({"story_pattern": "Before → After"})
-    assert result["story_pattern"] == "Before → After"
-    assert result["duration"] == sum(s["duration"] for s in result["scenes"])
-    goals = [s["goal"] for s in result["scenes"]]
-    assert goals == ["Hook", "Problem", "Solution", "Proof", "CTA"]
+def test_generate_story_returns_contract():
+    payload = MOCK.generate_story({})
+    provider, client = _provider(payload)
+    result = provider.generate_story(CreativeStrategy(strategy="X").to_dict())
+    assert isinstance(result, Storyboard)
+    assert len(client.messages.calls) == 1
 
 
-def test_prompt_contract(provider):
-    result = provider.compile_prompt({"duration": 20})
-    assert result["target_backend"] == "Higgsfield"
-    assert result["prompt"]
-    assert set(result["metadata"]) == {"duration", "aspect_ratio", "language", "version"}
+def test_compile_prompt_returns_contract():
+    payload = MOCK.compile_prompt({})
+    provider, client = _provider(payload)
+    result = provider.compile_prompt(Storyboard().to_dict())
+    assert isinstance(result, RenderPrompt)
+    assert len(client.messages.calls) == 1
 
 
-def test_outputs_are_deterministic(provider):
-    facts = {"product_name": "Test", "features": ["a", "b", "c"]}
-    assert provider.analyze_product(facts) == provider.analyze_product(facts)
-    assert provider.generate_creative_strategy({}) == provider.generate_creative_strategy({})
-    assert provider.generate_story({}) == provider.generate_story({})
-    assert provider.compile_prompt({}) == provider.compile_prompt({})
+def test_missing_required_keys_rejected():
+    provider, _ = _provider({"unexpected": 1})
+    with pytest.raises(ProviderResponseError):
+        provider.analyze_product({"product_name": "X"})
 
 
-def test_no_external_calls(provider, monkeypatch):
+def test_markdown_fence_response_rejected():
+    provider, _ = _provider('```json\n{"a": 1}\n```')
+    with pytest.raises(ProviderResponseError):
+        provider.analyze_product({"product_name": "X"})
+
+
+def test_injected_client_prevents_default_build():
+    # No ANTHROPIC_API_KEY and no anthropic import are needed when a client is injected.
+    payload = MOCK.compile_prompt({})
+    provider, _ = _provider(payload)
+    assert isinstance(provider.compile_prompt(Storyboard().to_dict()), RenderPrompt)
+
+
+def test_default_client_requires_configuration(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    provider = ClaudeProvider()  # no injected client
+    with pytest.raises(ProviderConfigError):
+        provider.analyze_product({"product_name": "X"})
+
+
+def test_no_network_with_injected_client(monkeypatch):
     def _boom(*args, **kwargs):
         raise AssertionError("network access attempted")
 
     monkeypatch.setattr(socket, "socket", _boom)
-    # None of these may open a socket.
-    pi = provider.analyze_product({"product_name": "X"})
-    strategy = provider.generate_creative_strategy(pi)
-    story = provider.generate_story(strategy)
-    provider.compile_prompt(story)
+    payload = MOCK.analyze_product({"product_name": "X"})
+    provider, _ = _provider(payload)
+    assert isinstance(provider.analyze_product({"product_name": "X"}), ProductIntelligence)

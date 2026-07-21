@@ -27,7 +27,7 @@ from engines.prompt_compiler_engine import PromptCompilerEngine
 from engines.story_engine import StoryEngine
 from parsers.product_parser import ProductParser
 from providers.base.provider import AIProvider
-from providers.claude.claude_provider import ClaudeProvider
+from providers.claude.mock_claude_provider import MockClaudeProvider
 
 
 class HydraPipeline:
@@ -38,7 +38,7 @@ class HydraPipeline:
         provider: Optional[AIProvider] = None,
         adapter: Optional[CoupangAdapter] = None,
     ) -> None:
-        provider = provider or ClaudeProvider()
+        provider = provider or MockClaudeProvider()
         if not isinstance(provider, AIProvider):
             raise TypeError("provider must be an AIProvider instance")
 

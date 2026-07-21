@@ -14,7 +14,7 @@ from contracts.creative_strategy import CreativeStrategy  # noqa: E402
 from contracts.product_intelligence import ProductIntelligence  # noqa: E402
 from engines.creative_strategy_engine import CreativeStrategyEngine  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
-from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
+from providers.claude.mock_claude_provider import MockClaudeProvider  # noqa: E402
 
 
 class SpyProvider(AIProvider):
@@ -27,7 +27,7 @@ class SpyProvider(AIProvider):
         self.last_args = None
         self._result = result
         self._raises = raises
-        self._delegate = ClaudeProvider()
+        self._delegate = MockClaudeProvider()
 
     def analyze_product(self, product_facts):
         raise NotImplementedError
@@ -112,7 +112,7 @@ def test_provider_called_exactly_once_with_both_inputs():
 
 
 def test_returned_object_is_creative_strategy():
-    result = CreativeStrategyEngine(ClaudeProvider()).decide(
+    result = CreativeStrategyEngine(MockClaudeProvider()).decide(
         _product_intelligence(), VALID_MARKET_FIT
     )
     assert type(result) is CreativeStrategy
@@ -141,7 +141,7 @@ def test_engine_does_not_network(monkeypatch):
         raise AssertionError("network access attempted")
 
     monkeypatch.setattr(socket, "socket", _boom)
-    result = CreativeStrategyEngine(ClaudeProvider()).decide(
+    result = CreativeStrategyEngine(MockClaudeProvider()).decide(
         _product_intelligence(), VALID_MARKET_FIT
     )
     assert isinstance(result, CreativeStrategy)

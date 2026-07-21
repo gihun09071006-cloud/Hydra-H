@@ -14,7 +14,7 @@ from contracts.product_facts import ProductFacts  # noqa: E402
 from contracts.product_intelligence import ProductIntelligence  # noqa: E402
 from engines.product_intelligence_engine import ProductIntelligenceEngine  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
-from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
+from providers.claude.mock_claude_provider import MockClaudeProvider  # noqa: E402
 
 
 class SpyProvider(AIProvider):
@@ -26,7 +26,7 @@ class SpyProvider(AIProvider):
         self.calls = 0
         self._result = result
         self._raises = raises
-        self._delegate = ClaudeProvider()
+        self._delegate = MockClaudeProvider()
 
     def analyze_product(self, product_facts):
         self.calls += 1
@@ -89,7 +89,7 @@ def test_provider_called_exactly_once():
 
 
 def test_returned_object_is_product_intelligence():
-    result = ProductIntelligenceEngine(ClaudeProvider()).analyze(VALID_FACTS)
+    result = ProductIntelligenceEngine(MockClaudeProvider()).analyze(VALID_FACTS)
     assert type(result) is ProductIntelligence
 
 
@@ -119,5 +119,5 @@ def test_engine_does_not_network(monkeypatch):
         raise AssertionError("network access attempted")
 
     monkeypatch.setattr(socket, "socket", _boom)
-    result = ProductIntelligenceEngine(ClaudeProvider()).analyze(VALID_FACTS)
+    result = ProductIntelligenceEngine(MockClaudeProvider()).analyze(VALID_FACTS)
     assert isinstance(result, ProductIntelligence)

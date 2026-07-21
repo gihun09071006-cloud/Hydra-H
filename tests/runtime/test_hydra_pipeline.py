@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from adapters.coupang.coupang_adapter import CoupangAdapter  # noqa: E402
 from contracts.render_prompt import RenderPrompt  # noqa: E402
 from providers.base.provider import AIProvider  # noqa: E402
-from providers.claude.claude_provider import ClaudeProvider  # noqa: E402
+from providers.claude.mock_claude_provider import MockClaudeProvider  # noqa: E402
 from runtime.hydra_pipeline import HydraPipeline  # noqa: E402
 
 AFFILIATE_URL = "https://link.coupang.com/a/abcdef"
@@ -42,14 +42,14 @@ def _fake_adapter():
 
 
 class RecordingProvider(AIProvider):
-    """Wraps ClaudeProvider and records the order of provider calls."""
+    """Wraps MockClaudeProvider and records the order of provider calls."""
 
     name = "recording"
 
     def __init__(self):
         self.calls: list[str] = []
         self.creative_args = None
-        self._d = ClaudeProvider()
+        self._d = MockClaudeProvider()
 
     def analyze_product(self, product_facts):
         self.calls.append("analyze_product")
