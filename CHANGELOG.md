@@ -35,10 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
-- Official Product Intelligence schema (`schemas/product_intelligence.schema.json`)
-  as the single source of truth for product fields consumed by every engine,
-  with full field documentation (`docs/PRODUCT_INTELLIGENCE.md`) covering each
-  field's purpose, data type, example, and required/optional status.
+- Product Intelligence schema documentation (`docs/PRODUCT_INTELLIGENCE.md`):
+  documents every field of the single canonical schema
+  (`data/schemas/product_intelligence.schema.json`) with purpose, type,
+  example, required status, and consuming engine, plus a compatibility review
+  against the Decision Engine, Market Fit Engine, and State Machine. Confirms a
+  single source of truth — one Product Intelligence schema in the repository.
 
 ## [v0.1] — Foundation
 
