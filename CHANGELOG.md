@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failed_ads/`, `patterns/`, `market_fit/`) and its `README.md`.
 - Acceptance test structure (`tests/acceptance/README.md`) requiring at least
   one acceptance test per future engine.
+- Story Engine implementation (`engines/story_engine.py`): orchestration only —
+  validates a `CreativeStrategy` contract, delegates storyboard generation to the
+  AI Provider (`provider.generate_story`), validates the returned `Storyboard`
+  contract, and returns it. Contains no prompt, storytelling/scene logic, or
+  networking. Unit tests (`tests/engines/test_story_engine.py`) cover valid
+  input, missing optional fields, invalid input, provider-called-once, return
+  type, invalid provider output, exception propagation, and no networking. No
+  new schema or documentation.
 - Creative Strategy Engine implementation
   (`engines/creative_strategy_engine.py`): orchestration only — validates a
   `ProductIntelligence` contract and a Market Fit result, delegates the creative
